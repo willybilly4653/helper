@@ -28,13 +28,18 @@ case "$1" in
         ;;
     block-updates)
         echo "[*] Blocking updates..."
-        mount -o remount,rw /
-        sed -i 's|CHROMEOS_AUSERVER=.*|CHROMEOS_AUSERVER=http://127.0.0.1/noupdate|' /etc/lsb-release
-        stop update-engine
-        rm -rf /var/lib/update_engine/prefs/*
-        mount -o remount,ro /
-        start update-engine
-        echo -e "${GREEN}Updates blocked.${NC}"
+        mount -o remount,rw / 2>/dev/null || true
+        if [ -w /etc/lsb-release ]; then
+            sed -i 's|CHROMEOS_AUSERVER=.*|CHROMEOS_AUSERVER=http://127.0.0.1/noupdate|' /etc/lsb-release
+            stop update-engine 2>/dev/null || true
+            rm -rf /var/lib/update_engine/prefs/* 2>/dev/null || true
+            mount -o remount,ro / 2>/dev/null || true
+            start update-engine 2>/dev/null || true
+            echo -e "${GREEN}Updates blocked.${NC}"
+        else
+            echo -e "${RED}Error: Cannot modify /etc/lsb-release. Run make_dev_ssd first.${NC}"
+            exit 1
+        fi
         ;;
     *)
         echo "Usage: corsola-helper.sh [unenroll|reenroll|block-updates]"

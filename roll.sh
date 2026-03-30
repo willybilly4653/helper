@@ -9,12 +9,6 @@ BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m'
 
-# Check if running as root
-if [ "$EUID" -ne 0 ]; then 
-    echo -e "${RED}[✗] Please run with sudo: sudo ./roll.sh${NC}"
-    exit 1
-fi
-
 # Function to show menu
 show_menu() {
     clear
@@ -33,30 +27,34 @@ show_menu() {
 # Main loop
 while true; do
     show_menu
-    read -p "Select a numeric menu option or Q to quit: " choice
+    printf "Select a numeric menu option or Q to quit: "
+    read choice
+    
+    # Trim whitespace and convert to lowercase for easier matching
+    choice=$(echo "$choice" | xargs | tr '[:upper:]' '[:lower:]')
     
     case "$choice" in
-        1|reroll|Reroll)
+        1|reroll)
             echo ""
             echo -e "${YELLOW}[*] Re-enrolling device...${NC}"
             echo -e "${YELLOW}[*] Running: vpd -i RW_VPD -d re_enrollment_key${NC}"
-            vpd -i RW_VPD -d re_enrollment_key
+            vpd -i RW_VPD -d re_enrollment_key 2>/dev/null
             if [ $? -eq 0 ]; then
                 echo -e "${GREEN}[✓] re_enrollment_key removed${NC}"
             else
-                echo -e "${RED}[✗] Failed to remove re_enrollment_key${NC}"
+                echo -e "${RED}[✗] Failed to remove re_enrollment_key (may not exist)${NC}"
             fi
             
             echo -e "${YELLOW}[*] Running: vpd -i RW_VPD -d block_devmode${NC}"
-            vpd -i RW_VPD -d block_devmode
+            vpd -i RW_VPD -d block_devmode 2>/dev/null
             if [ $? -eq 0 ]; then
                 echo -e "${GREEN}[✓] block_devmode removed${NC}"
             else
-                echo -e "${RED}[✗] Failed to remove block_devmode${NC}"
+                echo -e "${RED}[✗] Failed to remove block_devmode (may not exist)${NC}"
             fi
             
             echo -e "${YELLOW}[*] Running: crossystem block_devmode=0${NC}"
-            crossystem block_devmode=0
+            crossystem block_devmode=0 2>/dev/null
             if [ $? -eq 0 ]; then
                 echo -e "${GREEN}[✓] block_devmode set to 0${NC}"
             else
@@ -69,12 +67,12 @@ while true; do
             reboot
             break
             ;;
-        2|unroll|Unroll)
+        2|unroll)
             echo ""
             echo -e "${YELLOW}[*] Removing enrollment from device...${NC}"
             
             echo -e "${YELLOW}[*] Running: vpd -i RW_VPD -s re_enrollment_key=\"\$(openssl rand -hex 32)\"${NC}"
-            vpd -i RW_VPD -s re_enrollment_key="$(openssl rand -hex 32)"
+            vpd -i RW_VPD -s re_enrollment_key="$(openssl rand -hex 32)" 2>/dev/null
             if [ $? -eq 0 ]; then
                 echo -e "${GREEN}[✓] re_enrollment_key set to random value${NC}"
             else
@@ -82,7 +80,7 @@ while true; do
             fi
             
             echo -e "${YELLOW}[*] Running: crossystem block_devmode=0${NC}"
-            crossystem block_devmode=0
+            crossystem block_devmode=0 2>/dev/null
             if [ $? -eq 0 ]; then
                 echo -e "${GREEN}[✓] block_devmode set to 0${NC}"
             else
@@ -90,7 +88,7 @@ while true; do
             fi
             
             echo -e "${YELLOW}[*] Running: vpd -i RW_VPD -s block_devmode=0${NC}"
-            vpd -i RW_VPD -s block_devmode=0
+            vpd -i RW_VPD -s block_devmode=0 2>/dev/null
             if [ $? -eq 0 ]; then
                 echo -e "${GREEN}[✓] block_devmode saved to VPD${NC}"
             else
@@ -100,14 +98,15 @@ while true; do
             echo -e "${GREEN}[✓] Unenrollment completed.${NC}"
             echo -e "${YELLOW}[!] Next: Boot to developer mode and run block-updates${NC}"
             echo ""
-            read -p "Press Enter to return to menu..."
+            printf "Press Enter to return to menu..."
+            read dummy
             ;;
-        q|Q|quit|Quit)
+        q|quit)
             echo -e "${GREEN}Goodbye!${NC}"
             exit 0
             ;;
         *)
-            echo -e "${RED}[✗] Invalid option. Please enter 1, 2, or Q.${NC}"
+            echo -e "${RED}[✗] Invalid option: '$choice'. Please enter 1, 2, or Q.${NC}"
             sleep 2
             ;;
     esac

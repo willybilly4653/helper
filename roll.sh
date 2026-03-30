@@ -14,7 +14,6 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 show_menu() {
-    clear
     echo -e "${CYAN}==================================================${NC}"
     echo -e "${CYAN}         CORSOLA ENROLLMENT MANAGER               ${NC}"
     echo -e "${CYAN}==================================================${NC}"
@@ -25,79 +24,66 @@ show_menu() {
     echo -ne "${BLUE}Select an option: ${NC}"
 }
 
+# Don't clear screen automatically - let the user control
 while true; do
     show_menu
-    read -r choice
+    read choice
     
     case "$choice" in
         1)
-            clear
             echo ""
-            echo -e "${YELLOW}════════════════════════════════════════════════════════${NC}"
-            echo -e "${YELLOW}                    RE-ENROLLING DEVICE                    ${NC}"
-            echo -e "${YELLOW}════════════════════════════════════════════════════════${NC}"
-            echo ""
+            echo -e "${YELLOW}[*] Re-enrolling device...${NC}"
             
-            echo -e "${YELLOW}[*] Removing enrollment keys...${NC}"
+            echo -e "${YELLOW}[*] Removing re_enrollment_key...${NC}"
             vpd -i RW_VPD -d re_enrollment_key 2>/dev/null
-            echo -e "${GREEN}[✓] re_enrollment_key removed${NC}"
+            echo -e "${GREEN}[✓] Done${NC}"
             
+            echo -e "${YELLOW}[*] Removing block_devmode...${NC}"
             vpd -i RW_VPD -d block_devmode 2>/dev/null
-            echo -e "${GREEN}[✓] block_devmode removed${NC}"
+            echo -e "${GREEN}[✓] Done${NC}"
             
+            echo -e "${YELLOW}[*] Setting crossystem block_devmode=0...${NC}"
             crossystem block_devmode=0 2>/dev/null
-            echo -e "${GREEN}[✓] Developer mode unlocked${NC}"
-            echo ""
+            echo -e "${GREEN}[✓] Done${NC}"
             
-            echo -e "${GREEN}[✓] Re-enroll completed!${NC}"
             echo ""
-            echo -e "${YELLOW}════════════════════════════════════════════════════════${NC}"
-            echo -e "${YELLOW}                    REBOOTING IN 5 SECONDS                  ${NC}"
-            echo -e "${YELLOW}              Press Ctrl+C to cancel reboot                ${NC}"
-            echo -e "${YELLOW}════════════════════════════════════════════════════════${NC}"
-            
+            echo -e "${GREEN}[✓] Re-enroll completed! Rebooting in 5 seconds...${NC}"
+            echo -e "${YELLOW}Press Ctrl+C to cancel reboot${NC}"
             sleep 5
-            echo -e "${YELLOW}[!] Rebooting now...${NC}"
+            echo -e "${YELLOW}Rebooting now...${NC}"
             reboot
-            break
             ;;
         2)
-            clear
             echo ""
-            echo -e "${YELLOW}════════════════════════════════════════════════════════${NC}"
-            echo -e "${YELLOW}                    REMOVING ENROLLMENT                    ${NC}"
-            echo -e "${YELLOW}════════════════════════════════════════════════════════${NC}"
-            echo ""
+            echo -e "${YELLOW}[*] Removing enrollment from device...${NC}"
             
-            echo -e "${YELLOW}[*] Setting random enrollment key...${NC}"
+            echo -e "${YELLOW}[*] Setting random re_enrollment_key...${NC}"
             vpd -i RW_VPD -s re_enrollment_key="$(openssl rand -hex 32)" 2>/dev/null
-            echo -e "${GREEN}[✓] Enrollment blocked with random key${NC}"
+            echo -e "${GREEN}[✓] Done${NC}"
             
-            echo -e "${YELLOW}[*] Disabling developer mode block...${NC}"
+            echo -e "${YELLOW}[*] Setting crossystem block_devmode=0...${NC}"
             crossystem block_devmode=0 2>/dev/null
-            echo -e "${GREEN}[✓] Developer mode block disabled${NC}"
+            echo -e "${GREEN}[✓] Done${NC}"
             
-            echo -e "${YELLOW}[*] Saving to VPD...${NC}"
+            echo -e "${YELLOW}[*] Saving block_devmode to VPD...${NC}"
             vpd -i RW_VPD -s block_devmode=0 2>/dev/null
-            echo -e "${GREEN}[✓] Settings saved${NC}"
-            echo ""
+            echo -e "${GREEN}[✓] Done${NC}"
             
-            echo -e "${GREEN}[✓] Unenrollment completed!${NC}"
-            echo -e "${YELLOW}[!] Next steps: Boot to developer mode${NC}"
             echo ""
-            echo -e "${YELLOW}════════════════════════════════════════════════════════${NC}"
-            echo -ne "${BLUE}Press Enter to return to menu...${NC}"
-            read -r
-            # After pressing Enter, loop continues to show menu again
+            echo -e "${GREEN}[✓] Unenrollment completed!${NC}"
+            echo -e "${YELLOW}[!] Next: Boot to developer mode${NC}"
+            echo ""
+            echo -ne "${BLUE}Press Enter to continue...${NC}"
+            read
+            echo ""
             ;;
         e|E)
-            clear
             echo -e "${GREEN}Goodbye!${NC}"
             exit 0
             ;;
         *)
-            echo -e "\n${RED}Invalid option. Please select 1, 2, or e.${NC}"
-            sleep 1.5
+            echo -e "${RED}Invalid option. Please select 1, 2, or e.${NC}"
+            sleep 2
             ;;
     esac
 done

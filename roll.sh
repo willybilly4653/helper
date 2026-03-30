@@ -65,7 +65,7 @@ while true; do
             echo ""
             echo -e "${YELLOW}Rebooting in 5 seconds... Press Ctrl+C to cancel${NC}"
             sleep 5
-            reboot -f
+            reboot
             ;;
         2)
             clear
@@ -73,40 +73,21 @@ while true; do
             echo -e "${YELLOW}[*] Removing enrollment from device...${NC}"
             echo ""
             
-            echo -e "${YELLOW}[*] Clearing enrollment keys...${NC}"
+            echo -e "${YELLOW}[*] Setting random re_enrollment_key...${NC}"
             vpd -i RW_VPD -s re_enrollment_key="$(openssl rand -hex 32)" 2>/dev/null
-            vpd -i RO_VPD -s check_enrollment=0 2>/dev/null
-            echo -e "${GREEN}[✓] Enrollment keys cleared${NC}"
+            echo -e "${GREEN}[✓] re_enrollment_key set to random value${NC}"
             
-            echo -e "${YELLOW}[*] Enabling Developer Mode...${NC}"
+            echo -e "${YELLOW}[*] Setting crossystem block_devmode=0...${NC}"
             crossystem block_devmode=0 2>/dev/null
-            vpd -i RW_VPD -s block_devmode=0 2>/dev/null
-            echo -e "${GREEN}[✓] Developer Mode enabled${NC}"
+            echo -e "${GREEN}[✓] crossystem block_devmode set to 0${NC}"
             
-            echo -e "${YELLOW}[*] Clearing cached enterprise policies...${NC}"
-            rm -rf /var/lib/enterprise* 2>/dev/null
-            rm -rf /home/chronos/enterprise* 2>/dev/null
-            rm -rf /mnt/stateful_partition/var/lib/enterprise* 2>/dev/null
-            rm -rf /mnt/stateful_partition/var/lib/devicesettings 2>/dev/null
-            rm -rf /home/chronos/Policy* 2>/dev/null
-            rm -rf /var/lib/whitelist 2>/dev/null
-            echo -e "${GREEN}[✓] Policies cleared${NC}"
+            echo -e "${YELLOW}[*] Saving block_devmode to VPD...${NC}"
+            vpd -i RW_VPD -s block_devmode=0 2>/dev/null
+            echo -e "${GREEN}[✓] block_devmode saved to VPD${NC}"
             
             echo ""
             echo -e "${GREEN}[✓] Unenrollment completed!${NC}"
-            echo -e "${YELLOW}[!] IMPORTANT NEXT STEPS:${NC}"
-            echo -e "    1. Reboot the device"
-            echo -e "    2. At recovery screen, press Ctrl+D to enter Developer Mode"
-            echo -e "    3. When prompted, DO NOT connect to Wi-Fi yet"
-            echo -e "    4. Press Ctrl+Alt+F2 to open terminal"
-            echo -e "    5. Run: vpd -i RO_VPD -s check_enrollment=0"
-            echo -e "    6. Then: reboot"
-            echo -e "    7. Now you can connect to Wi-Fi safely"
-            echo ""
-            echo -e "${YELLOW}[!] If it still tries to enroll after Wi-Fi:${NC}"
-            echo -e "    Immediately press Ctrl+Alt+F2 and run:"
-            echo -e "    rm -rf /var/lib/enterprise* && reboot"
-            echo ""
+            echo -e "${YELLOW}[!] Next: Boot to developer mode (Esc+Refresh+Power, then Ctrl+D)${NC}"
             echo -ne "${BLUE}Press Enter to continue...${NC}"
             read -r < /dev/tty
             ;;
@@ -119,4 +100,4 @@ while true; do
             sleep 1
             ;;
     esac
-done
+done 

@@ -13,70 +13,77 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# Check if running in interactive mode
-if [ ! -t 0 ]; then
-    echo -e "${RED}[✗] This script requires interactive input.${NC}"
-    echo -e "${YELLOW}Please run it as:${NC}"
-    echo -e "  curl -sSL [url] -o /tmp/roll.sh && sudo bash /tmp/roll.sh"
-    exit 1
-fi
+show_menu() {
+    clear
+    echo -e "${CYAN}==================================================${NC}"
+    echo -e "${CYAN}         CORSOLA ENROLLMENT MANAGER               ${NC}"
+    echo -e "${CYAN}==================================================${NC}"
+    echo -e " ${YELLOW}1)${NC} Reroll (Re-enroll Device)"
+    echo -e " ${YELLOW}2)${NC} Unroll (Remove Enrollment)"
+    echo -e " ${YELLOW}e)${NC} Exit"
+    echo -e "${CYAN}--------------------------------------------------${NC}"
+    echo -ne "${BLUE}Select an option: ${NC}"
+}
 
-# Simple menu
-echo ""
-echo -e "${CYAN}==================================================${NC}"
-echo -e "${CYAN}         CORSOLA ENROLLMENT MANAGER               ${NC}"
-echo -e "${CYAN}==================================================${NC}"
-echo -e " ${YELLOW}1)${NC} Reroll (Re-enroll Device)"
-echo -e " ${YELLOW}2)${NC} Unroll (Remove Enrollment)"
-echo -e " ${YELLOW}e)${NC} Exit"
-echo -e "${CYAN}--------------------------------------------------${NC}"
-echo ""
-printf "${BLUE}Enter your choice (1, 2, or e): ${NC}"
-read -r choice
-
-if [ "$choice" = "1" ]; then
-    echo ""
-    echo -e "${YELLOW}[*] Re-enrolling device...${NC}"
-    echo ""
-    
-    vpd -i RW_VPD -d re_enrollment_key 2>/dev/null
-    echo -e "${GREEN}[✓] re_enrollment_key removed${NC}"
-    
-    vpd -i RW_VPD -d block_devmode 2>/dev/null
-    echo -e "${GREEN}[✓] block_devmode removed${NC}"
-    
-    crossystem block_devmode=0 2>/dev/null
-    echo -e "${GREEN}[✓] block_devmode set to 0${NC}"
-    
-    echo ""
-    echo -e "${GREEN}[✓] Re-enroll completed!${NC}"
-    echo -e "${YELLOW}Rebooting in 5 seconds... Press Ctrl+C to cancel${NC}"
-    sleep 5
-    reboot
-    
-elif [ "$choice" = "2" ]; then
-    echo ""
-    echo -e "${YELLOW}[*] Removing enrollment from device...${NC}"
-    echo ""
-    
-    vpd -i RW_VPD -s re_enrollment_key="$(openssl rand -hex 32)" 2>/dev/null
-    echo -e "${GREEN}[✓] re_enrollment_key set to random value${NC}"
-    
-    crossystem block_devmode=0 2>/dev/null
-    echo -e "${GREEN}[✓] block_devmode set to 0${NC}"
-    
-    vpd -i RW_VPD -s block_devmode=0 2>/dev/null
-    echo -e "${GREEN}[✓] block_devmode saved to VPD${NC}"
-    
-    echo ""
-    echo -e "${GREEN}[✓] Unenrollment completed!${NC}"
-    echo -e "${YELLOW}[!] Next: Boot to developer mode${NC}"
-    
-elif [ "$choice" = "e" ] || [ "$choice" = "E" ]; then
-    echo -e "${GREEN}Goodbye!${NC}"
-    exit 0
-    
-else
-    echo -e "${RED}[✗] Invalid option: '${choice}'${NC}"
-    exit 1
-fi
+while true; do
+    show_menu
+    read -r choice < /dev/tty
+    case "$choice" in
+        1)
+            clear
+            echo ""
+            echo -e "${YELLOW}[*] Re-enrolling device...${NC}"
+            echo ""
+            
+            echo -e "${YELLOW}[*] Removing re_enrollment_key...${NC}"
+            vpd -i RW_VPD -d re_enrollment_key 2>/dev/null
+            echo -e "${GREEN}[✓] Done${NC}"
+            
+            echo -e "${YELLOW}[*] Removing block_devmode...${NC}"
+            vpd -i RW_VPD -d block_devmode 2>/dev/null
+            echo -e "${GREEN}[✓] Done${NC}"
+            
+            echo -e "${YELLOW}[*] Setting crossystem block_devmode=0...${NC}"
+            crossystem block_devmode=0 2>/dev/null
+            echo -e "${GREEN}[✓] Done${NC}"
+            
+            echo ""
+            echo -e "${GREEN}[✓] Re-enroll completed! Rebooting in 5 seconds...${NC}"
+            echo -e "${YELLOW}Press Ctrl+C to cancel${NC}"
+            sleep 5
+            reboot
+            ;;
+        2)
+            clear
+            echo ""
+            echo -e "${YELLOW}[*] Removing enrollment from device...${NC}"
+            echo ""
+            
+            echo -e "${YELLOW}[*] Setting random re_enrollment_key...${NC}"
+            vpd -i RW_VPD -s re_enrollment_key="$(openssl rand -hex 32)" 2>/dev/null
+            echo -e "${GREEN}[✓] Done${NC}"
+            
+            echo -e "${YELLOW}[*] Setting crossystem block_devmode=0...${NC}"
+            crossystem block_devmode=0 2>/dev/null
+            echo -e "${GREEN}[✓] Done${NC}"
+            
+            echo -e "${YELLOW}[*] Saving block_devmode to VPD...${NC}"
+            vpd -i RW_VPD -s block_devmode=0 2>/dev/null
+            echo -e "${GREEN}[✓] Done${NC}"
+            
+            echo ""
+            echo -e "${GREEN}[✓] Unenrollment completed!${NC}"
+            echo -e "${YELLOW}[!] Next: Boot to developer mode${NC}"
+            echo -ne "${BLUE}Press Enter to continue...${NC}"
+            read -r < /dev/tty
+            ;;
+        e|E)
+            echo -e "\n${GREEN}Goodbye!${NC}"
+            exit 0
+            ;;
+        *)
+            echo -e "\n${RED}Invalid option.${NC}"
+            sleep 1
+            ;;
+    esac
+done

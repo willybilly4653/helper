@@ -1,4 +1,5 @@
 #!/bin/bash
+# roll.sh - Corsola Enrollment Manager
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -6,21 +7,6 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 CYAN='\033[0;36m'
 NC='\033[0m'
-
-# ADD THIS FUNCTION
-run_vpd_in_vt2() {
-    local current_vt=$(fgconsole 2>/dev/null || echo "1")
-    
-    echo -e "${YELLOW}[*] Switching to VT2 to remove re_enrollment_key...${NC}"
-    
-    chvt 2
-    sleep 1
-    vpd -i RW_VPD -d re_enrollment_key 2>/dev/null
-    sleep 2
-    chvt "$current_vt"
-    
-    echo -e "${GREEN}[✓] Done${NC}"
-}
 
 if [ "$EUID" -ne 0 ]; then
     echo -e "${RED}Please run this script with sudo.${NC}"
@@ -50,9 +36,8 @@ while true; do
             echo ""
             
             echo -e "${YELLOW}[*] Removing re_enrollment_key...${NC}"
-            # CHANGE THIS LINE
-            run_vpd_in_vt2
-            # OLD LINE WAS: vpd -i RW_VPD -d re_enrollment_key 2>/dev/null
+            vpd -i RW_VPD -d re_enrollment_key 2>/dev/null
+            echo -e "${GREEN}[✓] Done${NC}"
             
             echo -e "${YELLOW}[*] Removing block_devmode from VPD...${NC}"
             vpd -i RW_VPD -d block_devmode 2>/dev/null
@@ -83,7 +68,6 @@ while true; do
             reboot
             ;;
         2)
-            # Your existing Option 2 stays exactly the same
             clear
             echo ""
             echo -e "${YELLOW}[*] Removing enrollment from device...${NC}"
